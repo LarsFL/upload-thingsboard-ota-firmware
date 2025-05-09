@@ -53,7 +53,7 @@ runs:
           -H "X-Authorization: Bearer ${{ steps.auth.outputs.token }}" \
           -d '{
             "deviceProfileId": {
-              "id": "${{ inputs.deviceProfileId }}",
+              "id": "${{ inputs.device_profile_id }}",
               "entityType": "DEVICE_PROFILE"
             },
             "type": "FIRMWARE",
