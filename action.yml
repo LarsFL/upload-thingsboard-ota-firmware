@@ -1,0 +1,73 @@
+# action.yml
+name: "Publish OTA to ThingsBoard"
+author: "LarsFL"
+description: "GitHub action to publish OTA packages to ThingsBoard"
+
+branding:
+  icon: "upload-cloud"
+  color: "blue"
+
+inputs:
+  title:
+    description: "OTA Title"
+    required: true
+  version:
+    description: "OTA Version"
+    required: true
+  file:
+    description: "File to upload"
+    required: true
+  tb_url:
+    description: "ThingsBoard URL"
+    required: true
+  device_profile_id:
+    description: "Device Profile ID"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Authenticate with ThingsBoard
+      id: auth
+      run: |
+        LOGIN_RESPONSE=$(curl -s -X POST ${{github.events.input.tb_url}}/api/auth/login \
+          -H "Content-Type: application/json" \
+          -d "{\"username\": \"${{ secrets.TB_USERNAME }}\", \"password\": \"${{ secrets.TB_PASSWORD }}\"}")
+        TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r .token)
+        echo "::add-mask::$TOKEN"
+        echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Create OTA Package Metadata
+      id: create_ota
+      run: |
+        CREATE_RESPONSE=$(curl -s -w "%{http_code}" -o create_response.json \
+          -X POST ${{github.events.input.tb_url}}/api/otaPackage \
+          -H "Content-Type: application/json" \
+          -H "X-Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+          -d '{
+            "deviceProfileId": {
+              "id": "${{ github.event.inputs.deviceProfileId }}",
+              "entityType": "DEVICE_PROFILE"
+            },
+            "type": "FIRMWARE",
+            "title": "${{ github.event.inputs.title }}",
+            "version": "${{ github.event.inputs.version }}"
+          }')
+
+        if [ "$CREATE_RESPONSE" != "200" ]; then
+          echo "Failed to create OTA package. HTTP $CREATE_RESPONSE"
+          cat create_response.json
+          exit 1
+        fi
+
+        OTA_ID=$(jq -r .id.id create_response.json)
+        echo "otaId=$OTA_ID" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Upload OTA Binary
+      run: |
+        curl -f -X POST ${{github.events.input.tb_url}}/api/otaPackage/${{ steps.create_ota.outputs.otaId }} \
+          -H "X-Authorization: Bearer ${{ steps.auth.outputs.token }}" \
+          -F "file=@${{ github.event.inputs.file }}"
+      shell: bash
