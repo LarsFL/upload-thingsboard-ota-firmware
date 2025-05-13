@@ -74,21 +74,32 @@ runs:
     - name: Upload OTA Binary
       shell: bash
       run: |
-        echo "Uploading firmware file: ${{ inputs.file }} to OTA package ID: ${{ steps.create_ota.outputs.otaId }}"
+        set +e  # Temporarily disable exit-on-error to handle failures manually
 
-        HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ inputs.tb_url }}/api/otaPackage/${{ steps.create_ota.outputs.otaId }}" \
-          -H "X-Authorization: Bearer ${{ steps.auth.outputs.token }}" \
-          -F "file=@${{ inputs.file }}" \
+        FILE_PATH="${{ inputs.file }}"
+        OTA_ID="${{ steps.create_ota.outputs.otaId }}"
+        AUTH_TOKEN="${{ steps.auth.outputs.token }}"
+        TB_URL="${{ inputs.tb_url }}"
+
+        echo "Uploading firmware file: $FILE_PATH to OTA package ID: $OTA_ID"
+
+        # Run curl and capture body and status
+        HTTP_RESPONSE=$(curl -v -s -w "\n%{http_code}" -X POST "$TB_URL/api/otaPackage/$OTA_ID" \
+          -H "X-Authorization: Bearer $AUTH_TOKEN" \
+          -F "file=@$FILE_PATH" \
           -F "checksumAlgorithm=SHA-256")
 
-        echo "HTTP Response: $HTTP_RESPONSE"
+        echo "Raw curl output:"
+        echo "$HTTP_RESPONSE"
 
-        # Split response and status code
+        # Split response
         BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
         STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
 
+        echo "HTTP Status Code: $STATUS"
+
         if [ "$STATUS" -ne 200 ]; then
-          echo "Upload failed with status $STATUS"
+          echo "Upload failed with status code $STATUS"
           echo "Response body:"
           echo "$BODY"
           exit 1
