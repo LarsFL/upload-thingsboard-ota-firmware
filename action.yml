@@ -87,7 +87,7 @@ runs:
         HTTP_RESPONSE=$(curl -v -s -w "\n%{http_code}" -X POST "$TB_URL/api/otaPackage/$OTA_ID" \
           -H "X-Authorization: Bearer $AUTH_TOKEN" \
           -F "file=@$FILE_PATH" \
-          -F "checksumAlgorithm=SHA-256")
+          -F "checksumAlgorithm=SHA256")
 
         echo "Raw curl output:"
         echo "$HTTP_RESPONSE"
