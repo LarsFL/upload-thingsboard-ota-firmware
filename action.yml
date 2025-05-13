@@ -74,8 +74,6 @@ runs:
     - name: Upload OTA Binary
       shell: bash
       run: |
-        set +e  # Temporarily disable exit-on-error to handle failures manually
-
         FILE_PATH="${{ inputs.file }}"
         OTA_ID="${{ steps.create_ota.outputs.otaId }}"
         AUTH_TOKEN="${{ steps.auth.outputs.token }}"
