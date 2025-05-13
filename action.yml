@@ -81,6 +81,8 @@ runs:
           -F "file=@${{ inputs.file }}" \
           -d '{"checksumAlgorithm": "SHA-256"}')
 
+        echo "HTTP Response: $HTTP_RESPONSE"
+
         # Split response and status code
         BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
         STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
