@@ -79,7 +79,7 @@ runs:
         HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${{ inputs.tb_url }}/api/otaPackage/${{ steps.create_ota.outputs.otaId }}" \
           -H "X-Authorization: Bearer ${{ steps.auth.outputs.token }}" \
           -F "file=@${{ inputs.file }}" \
-          -d '{"checksumAlgorithm": "SHA-256"}')
+          -F "checksumAlgorithm=SHA-256")
 
         echo "HTTP Response: $HTTP_RESPONSE"
 
